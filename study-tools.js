@@ -31,14 +31,13 @@ const panel=document.createElement(“div”);
 
 panel.innerHTML=`
 
-📚 Study Glass
-✕
+Study Glass
 
-⚡ Speed:
+Speed:
 
-📝 Note
-🔖 Mark
-🎯 Focus
+Note
+Mark
+Focus
 `;
 
 panel.style=position:fixed; top:20px; right:20px; width:320px; padding:20px; border-radius:32px; background:rgba(255,255,255,.18); backdrop-filter:blur(30px); -webkit-backdrop-filter:blur(30px); border:1px solid rgba(255,255,255,.3); box-shadow:0 20px 50px rgba(0,0,0,.25); z-index:999999; font-family:-apple-system,BlinkMacSystemFont;;
@@ -53,25 +52,25 @@ v=getVideo();
 
     if(v && v.duration){
         panel.querySelector("#info").innerHTML=`
-        🎬 Length: ${format(v.duration)}
+         Length: ${format(v.duration)}
         <br>
-        🚀 At speed: ${format(v.duration/data.speed)}
+         At speed: ${format(v.duration/data.speed)}
         <br>
-        🔥 Saved: ${format(v.duration-(v.duration/data.speed))}
+         Saved: ${format(v.duration-(v.duration/data.speed))}
         <br>
-        ⏳ Left: ${format(v.duration-v.currentTime)}
+         Left: ${format(v.duration-v.currentTime)}
         `;
     }
 
 }
 
 slider.oninput=()=>{ data.speed=Number(slider.value); save();
-applySpeed(); update(); toast(“⚡ Speed changed to”+data.speed+“x”); };
+applySpeed(); update(); toast(” Speed changed to “+data.speed+”x”); };
 
 panel.querySelector(“#close”).onclick=()=>{ panel.remove();
 
     const reopen=document.createElement("button");
-    reopen.textContent="📚";
+    reopen.textContent="";
     reopen.style=`
     position:fixed;
     right:20px;
@@ -93,10 +92,10 @@ panel.querySelector(“#close”).onclick=()=>{ panel.remove();
 
 panel.querySelector(“#note”).onclick=()=>{ const n=prompt(“Write note”);
 if(n){ data.notes.push({text:n,time:getVideo()?.currentTime||0});
-save(); toast(“📝 Note saved”); } };
+save(); toast(” Note saved”); } };
 
 panel.querySelector(“#mark”).onclick=()=>{
-data.marks.push(getVideo()?.currentTime||0); save(); toast(“🔖 Mark
+data.marks.push(getVideo()?.currentTime||0); save(); toast(” Mark
 saved”); };
 
 panel.querySelector(“#focus”).onclick=()=>{
@@ -115,6 +114,6 @@ setInterval(()=>{ const v=getVideo();
 
 },2000);
 
-applySpeed(); update(); toast(“🚀 Study Glass v4 Ready”);
+applySpeed(); update(); toast(” Study Glass v4 Ready”);
 
 })();

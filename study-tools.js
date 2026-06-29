@@ -1,154 +1,270 @@
 (()=>{
 "use strict";
 
-if(window.StudyTools){
+if(window.UltimateStudyTools){
     alert("🚀 Study Tools already running");
     return;
 }
-window.StudyTools=true;
 
-const STORAGE="UltimateStudyTools";
+window.UltimateStudyTools=true;
 
-let data=JSON.parse(localStorage.getItem(STORAGE)||"{}");
+
+const STORAGE_KEY="UltimateStudyTools_v1";
+
+
+let data=JSON.parse(
+    localStorage.getItem(STORAGE_KEY)
+    ||
+    "{}"
+);
+
 
 data.speed=data.speed||1.75;
 data.notes=data.notes||[];
 data.marks=data.marks||[];
-data.progress=data.progress||{};
-data.studyStart=data.studyStart||Date.now();
+data.completed=data.completed||false;
+data.position=data.position||0;
+data.totalWatched=data.totalWatched||0;
+
 
 function save(){
-    localStorage.setItem(STORAGE,JSON.stringify(data));
+    localStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify(data)
+    );
 }
 
-function videos(){
-    return [...document.querySelectorAll("video")];
-}
 
-function currentVideo(){
-    return videos()[0];
-}
+function toast(message){
 
-function toast(msg){
-    let t=document.createElement("div");
-    t.innerHTML=msg;
-    t.style=`
+    let box=document.createElement("div");
+
+    box.textContent=message;
+
+    box.style=`
     position:fixed;
-    bottom:35px;
+    bottom:30px;
     left:50%;
     transform:translateX(-50%);
     background:rgba(0,0,0,.85);
     color:white;
-    padding:12px 20px;
-    border-radius:20px;
+    padding:12px 22px;
+    border-radius:30px;
     z-index:999999;
-    font-family:-apple-system;
+    font-family:-apple-system,BlinkMacSystemFont;
     backdrop-filter:blur(10px);
     `;
-    document.body.appendChild(t);
-    setTimeout(()=>t.remove(),1800);
-}
 
-function setSpeed(speed){
+    document.body.appendChild(box);
 
-    data.speed=Number(speed);
-    save();
-
-    videos().forEach(v=>{
-        v.playbackRate=data.speed;
-    });
-
-    toast("⚡ Speed changed to "+data.speed+"x");
+    setTimeout(()=>{
+        box.remove();
+    },1800);
 }
 
 
-function formatTime(sec){
 
-    if(!sec || isNaN(sec))
+function getVideo(){
+
+    return document.querySelector("video");
+
+}
+
+
+
+function formatTime(seconds){
+
+    if(!seconds || isNaN(seconds))
         return "0m";
 
-    let h=Math.floor(sec/3600);
-    let m=Math.floor((sec%3600)/60);
+    let h=Math.floor(seconds/3600);
 
-    return h?
-    `${h}h ${m}m`:
-    `${m}m`;
+    let m=Math.floor(
+        (seconds%3600)/60
+    );
 
+    let s=Math.floor(seconds%60);
+
+
+    if(h)
+        return `${h}h ${m}m`;
+
+    if(m)
+        return `${m}m ${s}s`;
+
+    return `${s}s`;
 }
 
-
-function timeInfo(){
-
-    let v=currentVideo();
-
-    if(!v || !v.duration)
-        return null;
-
-    return {
-        total:v.duration,
-        remaining:(v.duration-v.currentTime),
-        fast:v.duration/data.speed,
-        saved:v.duration-(v.duration/data.speed)
-    };
-}
 
 
 function applySpeed(){
 
-    videos().forEach(v=>{
-        v.playbackRate=data.speed;
+    document
+    .querySelectorAll("video")
+    .forEach(video=>{
+
+        video.playbackRate=data.speed;
+
     });
 
 }
 
 
-new MutationObserver(()=>{
+
+function setSpeed(value){
+
+    data.speed=Number(value);
+
+    save();
+
     applySpeed();
-})
-.observe(document.body,{
-    childList:true,
-    subtree:true
-});
+
+    document
+    .getElementById("speedValue")
+    .textContent=data.speed+"x";
 
 
-console.log("🚀 Study Tools loaded");
+    toast(
+        "⚡ Speed changed to "+
+        data.speed+
+        "x"
+    );
 
-})();
-// ===== UI PANEL =====
+    updateInfo();
+
+}
+
+
+
+
+function getInfo(){
+
+    let video=getVideo();
+
+    if(!video || !video.duration)
+        return null;
+
+
+    return {
+
+        total:video.duration,
+
+        remaining:
+        video.duration-video.currentTime,
+
+        fast:
+        video.duration/data.speed,
+
+        saved:
+        video.duration-
+        (video.duration/data.speed)
+
+    };
+
+}
+
+
+
+
+function updateInfo(){
+
+    let info=getInfo();
+
+    let area=
+    document.getElementById("videoInfo");
+
+
+    if(!area || !info)
+        return;
+
+
+    area.innerHTML=`
+
+    🎬 Total:
+    ${formatTime(info.total)}
+
+    <br>
+
+    🚀 Finish at ${data.speed}x:
+    ${formatTime(info.fast)}
+
+    <br>
+
+    🔥 Time saved:
+    ${formatTime(info.saved)}
+
+    <br>
+
+    ⏳ Remaining:
+    ${formatTime(info.remaining)}
+
+    `;
+
+}
+
+
+
+
+
+// ===== PANEL =====
+
 
 let panel=document.createElement("div");
 
+
 panel.id="studyPanel";
 
+
 panel.style=`
+
 position:fixed;
 top:20px;
 right:20px;
-width:280px;
-background:rgba(20,20,25,.85);
+width:300px;
+max-height:80vh;
+overflow:auto;
+
+background:
+rgba(20,20,25,.82);
+
 color:white;
+
 padding:18px;
-border-radius:22px;
+
+border-radius:24px;
+
 z-index:999999;
-font-family:-apple-system,BlinkMacSystemFont,sans-serif;
-backdrop-filter:blur(18px);
-box-shadow:0 15px 40px rgba(0,0,0,.4);
+
+font-family:
+-apple-system,BlinkMacSystemFont,sans-serif;
+
+backdrop-filter:
+blur(18px);
+
+box-shadow:
+0 15px 40px rgba(0,0,0,.4);
+
 `;
+
+
 
 panel.innerHTML=`
 
-<h3 style="margin:0 0 12px">
+<h2 style="margin-top:0">
 📚 Study Mode
-</h3>
+</h2>
+
 
 <div>
 ⚡ Speed:
-<b id="speedText">
+<b id="speedValue">
 ${data.speed}x
 </b>
 </div>
 
-<input id="speedSlider"
+
+<input
+id="speedSlider"
 type="range"
 min="0.5"
 max="3"
@@ -158,9 +274,14 @@ style="width:100%"
 >
 
 
-<div id="timeInfo"
-style="margin-top:10px;font-size:14px">
-Calculating...
+<div
+id="videoInfo"
+style="
+margin-top:12px;
+font-size:14px;
+line-height:1.6
+">
+Loading...
 </div>
 
 
@@ -168,12 +289,13 @@ Calculating...
 
 
 <button id="noteBtn">
-📝 Add Note
+📝 Note
 </button>
 
 <button id="markBtn">
-🔖 Mark Time
+🔖 Mark
 </button>
+
 
 <button id="focusBtn">
 🎯 Focus
@@ -182,111 +304,57 @@ Calculating...
 
 <hr>
 
+<div id="notesArea"></div>
 
-<div>
-⏱ Pomodoro
-</div>
-
-<button id="startTimer">
-Start 25 min
-</button>
-
-<div id="timer">
-25:00
-</div>
-
-
-<hr>
-
-
-<button id="closeBtn">
-✕ Close
-</button>
+<div id="marksArea"></div>
 
 `;
+
 
 document.body.appendChild(panel);
 
 
 
-const slider=
-panel.querySelector("#speedSlider");
+document
+.getElementById("speedSlider")
+.oninput=function(){
 
-const speedText=
-panel.querySelector("#speedText");
-
-
-slider.oninput=()=>{
-
-setSpeed(slider.value);
-
-speedText.innerHTML=
-slider.value+"x";
-
-updateInfo();
+    setSpeed(this.value);
 
 };
 
 
-
-function updateInfo(){
-
-let info=timeInfo();
-
-if(!info)
-return;
-
-panel.querySelector("#timeInfo").innerHTML=`
-
-🎬 Length:
-${formatTime(info.total)}
-
-<br>
-
-🚀 At ${data.speed}x:
-${formatTime(info.fast)}
-
-<br>
-
-🔥 Saved:
-${formatTime(info.saved)}
-
-<br>
-
-⏳ Left:
-${formatTime(info.remaining)}
-
-`;
-
-}
+// ===== BUTTON ACTIONS =====
 
 
-setInterval(updateInfo,1000);
-
-
-
-panel.querySelector("#noteBtn")
+document
+.getElementById("noteBtn")
 .onclick=()=>{
 
-let v=currentVideo();
+let video=getVideo();
 
-let note=prompt(
-"Write note:"
+let text=prompt(
+"📝 Write note:"
 );
 
-if(note){
+
+if(text){
 
 data.notes.push({
 
-text:note,
+text:text,
 
-time:v?
-v.currentTime:
+time:
+video?
+video.currentTime:
 0
 
 });
 
+
 save();
+
+renderNotes();
 
 toast("📝 Note saved");
 
@@ -296,304 +364,414 @@ toast("📝 Note saved");
 
 
 
-panel.querySelector("#markBtn")
+
+
+document
+.getElementById("markBtn")
 .onclick=()=>{
 
-let v=currentVideo();
+
+let video=getVideo();
+
+
+if(video){
 
 data.marks.push(
-v?v.currentTime:0
+video.currentTime
 );
+
 
 save();
 
+renderMarks();
+
+
 toast("🔖 Timestamp saved");
 
+}
+
 };
 
 
 
-panel.querySelector("#focusBtn")
+
+
+document
+.getElementById("focusBtn")
 .onclick=()=>{
 
-document.body.style.background="#000";
 
-let v=currentVideo();
-
-if(v && v.requestFullscreen)
-v.requestFullscreen();
-
-toast("🎯 Focus mode");
-
-};
+document.body.style.background="black";
 
 
-
-panel.querySelector("#closeBtn")
-.onclick=()=>{
-
-panel.remove();
-
-};
+let video=getVideo();
 
 
+if(video && video.requestFullscreen){
 
-// ===== POMODORO =====
-
-let timerSeconds=1500;
-let timerRunning=false;
-
-
-panel.querySelector("#startTimer")
-.onclick=()=>{
-
-timerRunning=!timerRunning;
-
-toast(
-timerRunning?
-"⏱ Pomodoro started":
-"⏸ Pomodoro paused"
-);
-
-};
-
-
-setInterval(()=>{
-
-if(timerRunning){
-
-timerSeconds--;
-
-let m=Math.floor(timerSeconds/60);
-
-let s=timerSeconds%60;
-
-panel.querySelector("#timer")
-.innerHTML=
-`${m}:${s.toString().padStart(2,"0")}`;
-
-if(timerSeconds<=0){
-
-timerRunning=false;
-
-timerSeconds=1500;
-
-toast("🎉 Pomodoro complete!");
+video.requestFullscreen();
 
 }
 
+
+toast("🎯 Focus mode ON");
+
+};
+
+
+
+
+
+// ===== NOTES DISPLAY =====
+
+
+function renderNotes(){
+
+
+let box=
+document.getElementById("notesArea");
+
+
+box.innerHTML=
+"<hr><b>📝 Notes</b><br>";
+
+
+data.notes.forEach(note=>{
+
+
+let item=document.createElement("div");
+
+
+item.style=`
+
+margin:6px 0;
+padding:8px;
+background:#ffffff18;
+border-radius:10px;
+cursor:pointer;
+
+`;
+
+
+item.innerHTML=
+`
+${formatTime(note.time)}
+<br>
+${note.text}
+`;
+
+
+item.onclick=()=>{
+
+let video=getVideo();
+
+if(video)
+video.currentTime=note.time;
+
+};
+
+
+box.appendChild(item);
+
+
+});
+
+
 }
 
-},1000);
 
 
-applySpeed();
 
-updateInfo();
-// ===== RESUME POSITION =====
 
-let videoCheck=setInterval(()=>{
 
-let v=currentVideo();
+// ===== MARK DISPLAY =====
 
-if(!v)
+
+
+function renderMarks(){
+
+
+let box=
+document.getElementById("marksArea");
+
+
+box.innerHTML=
+"<hr><b>🔖 Marks</b><br>";
+
+
+
+data.marks.forEach(mark=>{
+
+
+let button=document.createElement("button");
+
+
+button.textContent=
+"▶ "+formatTime(mark);
+
+
+
+button.style=
+"display:block;width:100%;margin:5px 0";
+
+
+button.onclick=()=>{
+
+
+let video=getVideo();
+
+
+if(video)
+video.currentTime=mark;
+
+
+};
+
+
+box.appendChild(button);
+
+
+
+});
+
+
+}
+
+
+
+
+
+
+// ===== RESUME SYSTEM =====
+
+
+let resumeCheck=setInterval(()=>{
+
+
+let video=getVideo();
+
+
+if(!video)
 return;
 
-clearInterval(videoCheck);
+
+clearInterval(resumeCheck);
 
 
-// restore position
 
-if(data.position){
+if(data.position>5){
 
-v.currentTime=data.position;
+
+video.currentTime=data.position;
+
 
 toast(
 "▶ Resumed from "+
 formatTime(data.position)
 );
 
+
 }
 
 
-// save position
 
-v.addEventListener("timeupdate",()=>{
 
-data.position=v.currentTime;
+video.addEventListener(
+"timeupdate",
+()=>{
+
+
+data.position=
+video.currentTime;
+
+
+data.totalWatched+=1;
+
 
 save();
 
-});
+
+updateInfo();
 
 
-// completion tracking
+}
+);
 
-v.addEventListener("ended",()=>{
+
+
+video.addEventListener(
+"ended",
+()=>{
+
 
 data.completed=true;
 
+
 save();
+
 
 toast(
 "🎉 Lecture completed!"
 );
 
+
 });
+
+
+
+applySpeed();
 
 
 },1000);
 
 
 
-// ===== TIMESTAMP LIST =====
-
-let list=document.createElement("div");
-
-list.style=`
-margin-top:10px;
-font-size:13px;
-max-height:120px;
-overflow:auto;
-`;
-
-panel.appendChild(list);
 
 
 
-function showMarks(){
-
-list.innerHTML="<b>🔖 Marks</b><br>";
-
-data.marks.forEach((m,i)=>{
-
-let b=document.createElement("button");
-
-b.innerHTML=
-"▶ "+formatTime(m);
-
-b.style="display:block;margin:4px;width:100%";
+// ===== POMODORO =====
 
 
-b.onclick=()=>{
+let pomodoro=1500;
 
-let v=currentVideo();
+let running=false;
 
-if(v)
-v.currentTime=m;
+
+let timer=document.createElement("div");
+
+
+timer.style=
+"margin-top:12px";
+
+
+panel.appendChild(timer);
+
+
+
+let timerButton=document.createElement("button");
+
+
+timerButton.textContent=
+"⏱ Start Pomodoro";
+
+
+panel.appendChild(timerButton);
+
+
+
+timerButton.onclick=()=>{
+
+
+running=!running;
+
+
+toast(
+running?
+"⏱ Pomodoro started":
+"⏸ Pomodoro paused"
+);
+
 
 };
 
 
-list.appendChild(b);
 
-});
+
+
+setInterval(()=>{
+
+
+if(running){
+
+
+pomodoro--;
+
+
+let m=Math.floor(
+pomodoro/60
+);
+
+
+let s=pomodoro%60;
+
+
+timer.textContent=
+`⏱ ${m}:${String(s).padStart(2,"0")}`;
+
+
+
+if(pomodoro<=0){
+
+
+running=false;
+
+pomodoro=1500;
+
+
+toast(
+"🎉 Pomodoro complete!"
+);
+
 
 }
 
 
-showMarks();
-
-
-
-// ===== NOTES LIST =====
-
-let notesBox=document.createElement("div");
-
-notesBox.style=`
-margin-top:10px;
-font-size:13px;
-max-height:150px;
-overflow:auto;
-`;
-
-panel.appendChild(notesBox);
-
-
-
-function showNotes(){
-
-notesBox.innerHTML=
-"<b>📝 Notes</b><br>";
-
-data.notes.forEach((n)=>{
-
-let item=document.createElement("div");
-
-item.style=
-"margin:5px;padding:5px;background:#ffffff22;border-radius:8px";
-
-
-item.innerHTML=
-`
-${formatTime(n.time)}
-<br>
-${n.text}
-`;
-
-item.onclick=()=>{
-
-let v=currentVideo();
-
-if(v)
-v.currentTime=n.time;
-
-};
-
-
-notesBox.appendChild(item);
-
-
-});
-
 }
 
 
-showNotes();
+},1000);
+
+
+
+
 
 
 
 // ===== KEYBOARD SHORTCUTS =====
 
+
+
 document.addEventListener(
 "keydown",
-(e)=>{
+e=>{
 
-let v=currentVideo();
 
-if(!v)
+let video=getVideo();
+
+
+if(!video)
 return;
 
 
 
-// Space = play pause
-
 if(e.code==="Space"){
+
 
 e.preventDefault();
 
-v.paused?
-v.play():
-v.pause();
+
+video.paused?
+video.play():
+video.pause();
+
 
 }
 
 
 
-// Left right seek
-
 if(e.key==="ArrowRight"){
 
-v.currentTime+=10;
+video.currentTime+=10;
 
 toast("⏩ +10 sec");
 
 }
 
 
+
 if(e.key==="ArrowLeft"){
 
-v.currentTime-=10;
+video.currentTime-=10;
 
 toast("⏪ -10 sec");
 
@@ -601,90 +779,102 @@ toast("⏪ -10 sec");
 
 
 
-// M = mark
-
 if(e.key.toLowerCase()==="m"){
 
-data.marks.push(v.currentTime);
+
+data.marks.push(
+video.currentTime
+);
+
 
 save();
 
-showMarks();
+renderMarks();
 
-toast("🔖 Mark saved");
+
+toast("🔖 Mark added");
+
 
 }
 
 
-
-// N = note
 
 if(e.key.toLowerCase()==="n"){
 
-let text=
-prompt("Note:");
+
+let text=prompt(
+"📝 Note:"
+);
+
 
 if(text){
 
+
 data.notes.push({
 
-time:v.currentTime,
+text:text,
 
-text:text
+time:video.currentTime
 
 });
+
 
 save();
 
-showNotes();
+renderNotes();
+
 
 toast("📝 Note saved");
 
-}
 
 }
+
+
+}
+
 
 
 });
 
 
 
-// ===== STUDY STATS =====
-
-let stats=document.createElement("div");
-
-stats.style=`
-margin-top:12px;
-font-size:13px;
-`;
-
-panel.appendChild(stats);
 
 
-function updateStats(){
 
-let watched=data.position||0;
 
-stats.innerHTML=
-`
-📊 Progress:
-${formatTime(watched)}
+// ===== AUTO UPDATE FOR NEW VIDEOS =====
 
-<br>
 
-${data.completed?
-"✅ Completed":
-"📖 In progress"}
 
-`;
+new MutationObserver(()=>{
 
+applySpeed();
+
+})
+.observe(
+document.body,
+{
+childList:true,
+subtree:true
 }
-
-
-setInterval(updateStats,1000);
-
-updateStats();
+);
 
 
 
-toast("🚀 Study Tools Ready");
+
+
+renderNotes();
+
+renderMarks();
+
+applySpeed();
+
+updateInfo();
+
+
+toast(
+"🚀 Study Tools Ready"
+);
+
+
+})();
